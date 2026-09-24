@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sonar — политика конфиденциальности</title>
+    <meta property="og:site_name" content="Sonar" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Политика конфиденциальности</h1>
+      <p class="date">Действует с 24 сентября 2026 года. Браузер Sonar, разработчик — Ekikak
+        (<a href="mailto:ekikak.bk@gmail.com">ekikak.bk@gmail.com</a>).</p>
+
+      <h2>Коротко</h2>
+      <p>У Sonar нет серверов. Мы не собираем, не храним и не передаём ваши данные:
+        собирать их некуда. Всё, что браузер знает о вас, лежит на вашем компьютере,
+        а копия — на вашем Google Диске, если вы её включили.</p>
+
+      <h2>Что остаётся на вашем компьютере</h2>
+      <p>История, закладки, вкладки, настройки, пароли сайтов, заметки Inner Voice и
+        файлы профиля хранятся локально, в папке вашего пользователя Windows. Профиль
+        пользователя с паролем шифруется ключом, выведенным из этого пароля.</p>
+
+      <h2>Google Диск</h2>
+      <p>Копия на Диск уезжает только если вы включили синхронизацию и вошли в Google.
+        Браузер просит одно разрешение — <code>https://www.googleapis.com/auth/drive.file</code>.
+        Это доступ <b>только к файлам, созданным самим приложением</b>: остальные ваши файлы,
+        папки и их названия приложению не видны.</p>
+      <ul>
+        <li><b>Что уезжает:</b> выбранные вами части — настройки, оформление, закладки,
+          вкладки и пространства, история, пароли сайтов, ключ приватного режима Inner Voice.
+          Выбор частей — ваш, галочками в настройках.</li>
+        <li><b>В каком виде:</b> зашифрованными свёртками. Ключ выводится из вашего пароля
+          (Argon2id), шифрование — XChaCha20-Poly1305. Ключ никуда не отправляется и нигде
+          не хранится: он считается заново при каждом входе. Прочитать копию без вашего
+          пароля не можем ни мы, ни Google.</li>
+        <li><b>Куда:</b> в папку «Sonar» на вашем Диске, в вашем аккаунте.</li>
+        <li><b>Если у профиля нет пароля:</b> копия уходит незашифрованной, и браузер
+          говорит об этом прямо. Ключ Inner Voice в такую копию не кладётся вовсе.</li>
+      </ul>
+
+      <h2>Кому мы передаём данные</h2>
+      <p>Никому. Сторонних служб аналитики, сбора ошибок и рекламы в браузере нет.
+        Обращения к сети — те же, что у любого браузера: сайты, которые вы открываете,
+        выбранный вами поисковик, обновления с GitHub и, если вы включили синхронизацию,
+        ваш Google Диск.</p>
+
+      <h2>Как забрать или удалить</h2>
+      <ul>
+        <li>Копии на Диске — папка «Sonar»: удалите её в Google Диске, и копий не останется.</li>
+        <li>Доступ приложения — <a href="https://myaccount.google.com/permissions">Google: приложения с доступом к аккаунту</a>:
+          отзовите доступ Sonar в любой момент.</li>
+        <li>Локальные данные — удаление браузера с выбором «удалить профили» или папка
+          профиля вручную.</li>
+      </ul>
+
+      <h2>Дети</h2>
+      <p>Sonar не предназначен для детей младше 13 лет и не собирает данные о них —
+        как и о ком-либо ещё.</p>
+
+      <h2>Изменения</h2>
+      <p>Если политика изменится, новая редакция появится на этой странице с новой датой.</p>
+
+      <h2>Связь</h2>
+      <p><a href="mailto:ekikak.bk@gmail.com">ekikak.bk@gmail.com</a></p>
+
+      <hr />
+
+      <h2 lang="en">Privacy policy (English summary)</h2>
+      <p lang="en">Sonar is a desktop browser for Windows. It has no servers and collects
+        no personal data. Everything stays on your computer. If you turn on sync, Sonar asks
+        for the <code>drive.file</code> scope only — access limited to files the app itself
+        creates — and stores encrypted backups in a folder named “Sonar” in your own Google
+        Drive. Backups are encrypted with a key derived from your password (Argon2id,
+        XChaCha20-Poly1305); the key is never uploaded, so neither we nor Google can read
+        them. No analytics, no crash reporting, no advertising, no data sharing with third
+        parties. Delete the “Sonar” folder in Drive to remove backups and revoke access at
+        <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.
+        Questions: <a href="mailto:ekikak.bk@gmail.com">ekikak.bk@gmail.com</a>.</p>
+
+      <footer>
+        <a href="index.html">Главная</a> · <a href="terms.html">Условия использования</a>
+      </footer>
+    </main>
+  </body>
+</html>
