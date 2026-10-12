@@ -1,0 +1,3161 @@
+@import './theme.css';
+@import './ui.css';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/**
+ * Ширина левой колонки: знак вверху, под ним боковая рейка.
+ *
+ * Число одно на оба места и обязано сходиться с `RAIL_WIDTH` в
+ * `src/main/sidebar.js` — там рейке отводится ровно столько же. Прежде оно
+ * стояло здесь дважды, у знака, и разъехаться им было делом одной правки.
+ */
+:root {
+  --rail-w: 44px;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Фона у документа нет: слой панели растягивается на всю ширину под свои
+   выпадающие окна, и сплошная заливка закрыла бы страницу там, где содержимого
+   нет. Красят себя сами полосы вкладок и адреса и каждое окно по отдельности */
+/* Точка отсчёта для списка «что не влезло»: он ложится поверх страницы
+   и считает своё место от каркаса */
+body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  color: var(--fg);
+  font:
+    var(--ui-font-size) / 1 system-ui,
+    'Segoe UI',
+    sans-serif;
+  user-select: none;
+  cursor: default;
+}
+
+/* Никаких декоративных анимаций: только мгновенная обратная связь. */
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: default;
+  transition: background-color 80ms linear;
+}
+
+button:disabled {
+  color: var(--fg-dim);
+  opacity: 0.4;
+}
+
+button:not(:disabled):hover {
+  background: var(--bg-hover);
+}
+
+button:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 24px;
+  align-self: center;
+  border-radius: var(--r-ctl);
+}
+
+.icon svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+
+.icon.danger:not(:disabled):hover {
+  background: var(--danger);
+  color: var(--on-danger);
+}
+
+/* ── Строка вкладок ───────────────────────────────────────────────────────── */
+#tabstrip {
+  display: flex;
+  flex: 0 0 var(--tabstrip-h);
+  height: var(--tabstrip-h);
+  /**
+   * Грунт вместо плоской заливки — см. `--грунт` в `theme.css`.
+   *
+   * Полоса вкладок это самая заметная поверхность браузера: она на экране
+   * всегда. Плоская, она читалась как незаконченная — с этого и начался
+   * разговор «оформление в установщике лучше».
+   *
+   * Пятна света стоят по углам ОКНА, а не полосы: `background-attachment`
+   * здесь ни при чём, размеры градиентов заданы в точках и считаются
+   * от своего узла. Полоса берёт верхний левый край общего света — тот же,
+   * что продолжится ниже, в строке адреса.
+   */
+  background: var(--bg);
+  -webkit-app-region: drag;
+}
+
+#tabstrip button,
+#tabs {
+  -webkit-app-region: no-drag;
+}
+
+/**
+ * ── Кнопки окна в строке адреса ─────────────────────────────────────────────
+ *
+ * При стиле «Слева колонкой» полосы вкладок нет вовсе, и кнопки окна
+ * переезжают сюда — переносом узла, `кнопкиОкнаПоСтилю` в `chrome.js`.
+ *
+ * Строка адреса перетаскивания не несла: его несла полоса. Без полосы окно
+ * стало бы нечем двигать, поэтому строка берёт эту работу на себя — но
+ * только сама строка, не то, что в ней лежит.
+ */
+body.без-полосы #toolbar {
+  -webkit-app-region: drag;
+}
+
+/**
+ * Полоска для перетаскивания окна.
+ *
+ * Строка адреса объявлена перетаскиваемой строкой выше, но всё, что в ней
+ * лежит, — нет, а поле адреса растянуто во всю ширину: свободного места
+ * в ней не остаётся, и попасть курсором некуда. Хозяин так и сказал —
+ * «курсор не может взять браузер».
+ *
+ * Высота нулевая, пока есть полоса вкладок: там окно берут за неё.
+ */
+#grab {
+  flex: 0 0 auto;
+  height: var(--grab-h, 0px);
+  background: var(--bg);
+  -webkit-app-region: drag;
+}
+
+body.без-полосы #toolbar > * {
+  -webkit-app-region: no-drag;
+}
+
+#window-controls.в-строке {
+  /* Отступ слева, чтобы «закрыть» не липло к трём линиям */
+  margin-left: 6px;
+}
+
+/* Последняя кнопка доходит до края; соседние элементы сохраняют свой отступ. */
+#toolbar:has(#window-controls:not([hidden])) {
+  padding-right: 0;
+}
+
+/**
+ * Знак браузера в левом углу.
+ *
+ * Ширина сходится с боковой рейкой (RAIL_WIDTH = 44 в `src/main/sidebar.js`):
+ * левый край окна собран в одну линию — знак, под ним рейка, вкладки от того
+ * же места, что и содержимое.
+ *
+ * Место занято всегда, даже при скрытой рейке: иначе вкладки прыгали бы
+ * вбок при каждом её выезде. Область перетаскивания у знака не снята —
+ * он ничего не делает по нажатию, и окно за него таскается, как за пустое
+ * место рядом.
+ */
+#brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--rail-w);
+  width: var(--rail-w);
+  color: var(--accent);
+}
+
+#brand svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Строка значков в самом верху окна — знак стоит в ней (sidebar.html, #row-brand) */
+body.знак-в-ряду #brand {
+  display: none;
+}
+
+#tabs {
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* «Много вкладок: прокручивать» — ряд листается колёсиком, полосы прокрутки нет */
+#tabs.листать {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+#tabs.листать::-webkit-scrollbar {
+  display: none;
+}
+#tabs.листать .tab {
+  flex-shrink: 1;
+}
+
+/**
+ * Вкладка: форма и метка активной — два разных решения.
+ *
+ * Их легко спутать, и я однажды спутал: в стенде стилей они стояли одним
+ * выбором, из-за чего «обводка» шла в комплекте с прямоугольной формой,
+ * хотя обводку можно надеть на любой силуэт. Теперь порознь — `tabShape`
+ * и `tabMark` в настройках, значения приезжают свойствами из `look.js`.
+ *
+ * Запасные значения тут же в `var()`: если вид почему-то не доехал,
+ * вкладка остаётся скошенной, как была.
+ */
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /**
+   * Ширина настраивается — поле «Ширина вкладок». Числа приезжают
+   * переменными из `look.js`; запасные значения здесь же, на случай
+   * если вид почему-то не доехал.
+   *
+   * `width` названа ВМЕСТЕ с `flex-basis`, и это не лишнее. Полоса вкладок
+   * сама себя меряет по содержимому, а у растягивающегося элемента (`1 1`)
+   * содержимым для этого счёта считается ТЕКСТ, а не желаемая ширина:
+   * вкладка с коротким именем выходила 145 точек при любом значении поля,
+   * и настройка не делала ничего. С названной шириной полоса считает
+   * по ней — а сжиматься вкладкам это не мешает, `flex-shrink` остался.
+   */
+  flex: 0 1 var(--tab-basis, 240px);
+  width: var(--tab-basis, 240px);
+  min-width: var(--tab-min, 52px);
+  max-width: var(--tab-max, 280px);
+  margin: 3px 0 0;
+  padding: var(--tab-pad, 0 12px);
+  clip-path: var(--tab-clip, none);
+  border-radius: var(--tab-radius, 0);
+  border: 1px solid transparent;
+  /* Скос делается наклоном, а не отсечением: тогда рамка наклоняется вместе
+     с вкладкой и цела со всех четырёх сторон */
+  transform: var(--tab-tilt, skewX(-11deg));
+  color: var(--fg-dim);
+  overflow: hidden;
+  transition: background-color 80ms linear;
+}
+
+/* Содержимое наклоняется обратно, иначе буквы и значки стояли бы косо */
+.tab > * {
+  transform: var(--tab-untilt, skewX(11deg));
+}
+
+/* Слой формы: пустой при любой форме, кроме трапеции, — та рисует им себя,
+   потому что `clip-path` на самой вкладке срезал бы и уголки.
+   Наклон он НЕ отменяет (`transform: none` вместо `--tab-untilt`): слой
+   должен лежать по вкладке, а не стоять прямо посреди наклонённой. */
+.tab > .shape {
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  transform: none;
+  pointer-events: none;
+}
+
+.tab:hover {
+  background: var(--bg-hover);
+}
+
+.tab.active {
+  background: var(--tab-on-bg, var(--accent-soft));
+  border: var(--tab-on-border, 1px solid var(--accent));
+  color: var(--fg);
+}
+
+/* Полоса по низу — одна из трёх примет активной; при обводке она не нужна
+   и гасится свойством, а не удалением правила */
+.tab.active::after {
+  content: '';
+  display: var(--tab-on-bar, none);
+  position: absolute;
+  bottom: 0;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background: var(--accent);
+}
+
+/* Полоска у левого края — она же приходит с обводкой. Ширина ноль означает
+   «нет полоски», и правило при этом ничего не рисует.
+
+   У формы «с уголками» этот псевдоэлемент занят под нижний левый уголок:
+   look.js дописывает своё правило, и оно идёт позже — значит побеждает. */
+.tab.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--tab-on-edge, 3px);
+  height: auto;
+  border: 0;
+  background: var(--accent);
+}
+
+.tab.dragging {
+  opacity: 0.4;
+}
+
+/* Восстановленная, но ещё не загруженная вкладка: заголовок и значок бледнее */
+.tab.sleeping .title,
+.tab.sleeping .favicon {
+  opacity: 0.55;
+}
+
+/* Динамик вкладки: перечёркнутый — звук выключен, видео при этом идёт */
+.tab .sound {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--r-ctl);
+  color: var(--accent);
+}
+
+.tab .sound svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tab .sound .cross {
+  display: none;
+}
+
+.tab .sound.muted {
+  color: var(--fg-dim);
+}
+
+.tab .sound.muted .waves {
+  display: none;
+}
+
+.tab .sound.muted .cross {
+  display: block;
+}
+
+.tab .favicon {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+/* Пока грузится — вместо иконки точка акцентного цвета. */
+.tab .spinner {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin: 0 4px;
+  background: var(--accent);
+}
+
+.tab .title {
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tab .close {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-ctl);
+  color: var(--fg-dim);
+  visibility: hidden;
+}
+
+.tab:hover .close,
+.tab.active .close {
+  visibility: visible;
+}
+
+.tab .close svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: square;
+}
+
+#drag-region {
+  flex: 1 1 auto;
+  min-width: 24px;
+}
+
+#private-badge {
+  align-self: center;
+  flex: 0 0 auto;
+  padding: 2px 10px;
+  border-radius: var(--r-ctl);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#private-badge[hidden] {
+  display: none;
+}
+
+.text-btn {
+  -webkit-app-region: no-drag;
+  align-self: center;
+  height: 22px;
+  padding: 0 12px;
+  border-radius: var(--r-ctl);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+#window-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-self: stretch;
+  align-items: stretch;
+}
+
+/**
+ * Кнопки окна занимают полосу целиком — от верхнего края до нижнего.
+ *
+ * У обычного значка высота 24 точки и выравнивание по центру, а полоса
+ * вкладок выше: над кнопкой оставалась тёмная щель, и заливка при наведении
+ * не доходила до края окна. У системных кнопок Windows щели нет, и наши
+ * рядом с ними выглядели недоделанными.
+ */
+#window-controls .icon {
+  width: 36px;
+  height: auto;
+  align-self: stretch;
+  border-radius: 0;
+}
+
+/**
+ * Загрузки: значок плюс число.
+ *
+ * Кнопка шире прочих ровно настолько, сколько просит число, — и не шире:
+ * пустая она такая же, как соседние, и ряд не разъезжается от того,
+ * что-то скачалось или нет.
+ */
+#downloads {
+  /* Значок и число в строку: у `.icon` раскладка — сетка с одной ячейкой,
+     и второй узел лёг бы поверх первого */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: auto;
+  min-width: 28px;
+  padding: 0 6px;
+}
+
+#dl-count {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+#dl-count:empty {
+  display: none;
+}
+
+/* Пока что-то качается — значок акцентом: это не украшение, а единственное,
+   по чему видно, что работа идёт, когда окошко закрыто */
+#downloads.идёт {
+  color: var(--accent);
+}
+
+/**
+ * Место строки значков под адресом. Пустой блок в потоке: всё, что каркас
+ * роняет ниже — панель трёх линий, подсказки, полоски, — уезжает под неё
+ * само. Ноль, когда строки под адресом нет.
+ */
+#ряд-место {
+  flex: 0 0 auto;
+  height: var(--ряд-под, 0px);
+}
+
+/**
+ * Картинка, которую курсор несёт, пока тащишь вкладку.
+ *
+ * Живёт один кадр и стоит за левым краем окна: показывать её на месте
+ * незачем, движку нужен только снимок. Ни наклона, ни отсечения —
+ * ровно поэтому она и заведена; см. `картинкаПереноса` в `chrome.js`.
+ */
+.tab-ghost {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 240px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-row, 6px);
+  background: var(--bg-elev);
+  color: var(--fg);
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.tab-ghost img {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+/* ── Панель управления ────────────────────────────────────────────────────── */
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 var(--toolbar-h);
+  height: var(--toolbar-h);
+  padding: 0 4px;
+  /* Точка отсчёта для полосы виньетки под нижней кромкой — см. `body.over` */
+  position: relative;
+  /*
+   * Черт у каркаса нет ни одной — ни над строкой адреса, ни под ней.
+   *
+   * Хозяин сказал прямо: убрать все чёрные линии обводки сверху и у левой
+   * панели. Верхняя отделяла строку адреса от полосы вкладок, нижняя —
+   * каркас от страницы; обе делили надвое то, что должно читаться одной
+   * поверхностью. Разделяет их теперь заливка: полоса вкладок стоит
+   * на `--bg`, строка адреса на `--bg-elev` — разница видна и без черты.
+   *
+   * Грунт у обеих свой (`--грунт` и `--грунт-выше`) и отличается ровно
+   * основанием: свет один и тот же, подложка разная. Дай мы им один грунт —
+   * разница пропала бы, и черту пришлось бы вернуть.
+   */
+  background: var(--bg);
+}
+
+/* Строка адреса вместе с тем, что стоит внутри неё справа */
+#address {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0 6px;
+}
+
+/* Щиток и сердечко — внутри поля, у правого края: они про сам адрес,
+   и место им рядом с ним. Плеер снаружи, поле кончается слева от него */
+/**
+ * Поле вместе с тем, что стоит внутри него справа.
+ *
+ * Своя обёртка нужна затем, что значки цепляются за правый край САМОГО поля.
+ * Раньше слой лежал поверх всей строки, и отступ отсчитывался от её края;
+ * пока плеер был спрятан, края совпадали, а с плеером значки промахивались
+ * мимо угла поля на два десятка точек — плеер сжимается, и его ширину
+ * числом не угадать.
+ */
+#field-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/**
+ * Щиток и сердечко — в правом углу поля, плеер снаружи справа.
+ *
+ * Подложка скруглена по правому краю: поле теперь капсула, и прямоугольная
+ * заливка вылезала бы из его закругления.
+ */
+#in-field {
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 7px;
+  /* Своя подложка: под значки не должен затекать длинный адрес */
+  background: var(--bg-sunk);
+  border-radius: 0 var(--r-ctl) var(--r-ctl) 0;
+}
+
+#nowplaying {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  /* На узком окне плеер ужимается, а не выдавливает адрес совсем.
+     Ползунок громкости ширины не занимает: он выпадает из динамика поверх
+     страницы, а не стоит в ряду */
+  width: min(250px, 46vw);
+  height: 100%;
+  padding-left: 4px;
+}
+
+#np-art {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-right: 5px;
+  border-radius: var(--r-row);
+  object-fit: cover;
+  /* Обложки приходят с чужих серверов и бывают любых пропорций */
+  background: var(--line);
+}
+
+/* Название сверху, исполнитель снизу — обе строки в высоту поля */
+/**
+ * Две строки в высоту поля адреса. Размеры подобраны замером, а не на глаз:
+ * при 10,5 и 9,5 пикселях с полуторным межстрочным текст выходил выше плеера
+ * на три пикселя и вылезал за строку.
+ */
+#np-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  margin-right: 4px;
+  line-height: 1.1;
+}
+
+#np-title,
+#np-artist {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: system-ui, sans-serif;
+}
+
+#np-title {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+#np-artist {
+  font-size: 8.5px;
+  color: var(--fg-dim);
+}
+
+#nowplaying .icon {
+  width: 21px;
+  height: 20px;
+}
+
+#nowplaying .icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+#nowplaying[hidden] {
+  display: none;
+}
+
+/* ── Громкость мини-плеера ───────────────────────────────────────────────────
+   Ползунок спрятан в динамик и выпадает из-под него — так же, как в панельном
+   плеере: вещь одна, и вести себя она должна одинаково. Стоймя и своими
+   узлами, а не полем-ползунком: повёрнутое поле не рисуется вовсе,
+   см. пояснение в `player.css`. */
+#np-sound {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* Ползунок выше закладок и прочих полос этого же документа. */
+#toolbar:has(#np-vol-box:not([hidden])) {
+  z-index: 10;
+}
+
+#np-vol-box {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  z-index: 5;
+  width: 26px;
+  height: 92px;
+  margin-left: -13px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-surface);
+  background: var(--bg-elev);
+  box-shadow: 0 6px 16px -8px #000;
+}
+
+#np-vol-box[hidden] {
+  display: none;
+}
+
+#np-volume {
+  position: relative;
+  width: 5px;
+  height: 72px;
+  border-radius: 999px;
+  background: var(--line);
+  cursor: default;
+}
+
+/* Полоса растёт снизу вверх: тише — ниже */
+#np-vol-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+/* Бегунок — на верхнем краю залитого */
+#np-vol-fill::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: var(--glow, none);
+}
+
+/* Кнопка одна, а рисунка два — как у «играет/пауза» */
+#np-mute .np-quiet {
+  display: none;
+}
+
+#nowplaying.muted #np-mute .np-loud {
+  display: none;
+}
+
+#nowplaying.muted #np-mute .np-quiet {
+  display: block;
+}
+
+/* Кнопка одна, а рисунка два: играет — показываем паузу, и наоборот */
+#np-play .np-go {
+  display: none;
+}
+
+#nowplaying:not(.playing) #np-play .np-pause {
+  display: none;
+}
+
+#nowplaying:not(.playing) #np-play .np-go {
+  display: block;
+  fill: currentColor;
+  stroke: none;
+}
+
+/* Щиток и сердечко — слева от плеера, в том же ряду */
+/* Значок туннеля стоит слева от щитка и живёт по тем же правилам.
+   Цветом отмечено рабочее состояние: «включён» и «работает» — разное */
+/* Значок туннеля виден, только когда VPN включён, — то есть он и есть
+   «живое». Свечение тут работает по назначению: показывает, что канал
+   действительно поднят, а не просто нарисована иконка. */
+#vpn-badge {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: var(--r-ctl);
+  color: var(--accent);
+  box-shadow: var(--glow);
+}
+
+/* Сломанный туннель не светится: свечение обещает «работает» */
+#vpn-badge.bad {
+  color: var(--danger, var(--fg-dim));
+  box-shadow: none;
+}
+
+#vpn-badge[hidden] {
+  display: none;
+}
+
+#vpn-badge svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+#shield {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--r-ctl);
+  color: var(--fg-dim);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+#shield.on {
+  color: var(--accent);
+}
+
+#shield[hidden] {
+  display: none;
+}
+
+#shield svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+#bookmark {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-ctl);
+  color: var(--fg-dim);
+}
+
+#bookmark svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+#bookmark[hidden] {
+  display: none;
+}
+
+#omnibox {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  background: var(--bg-sunk);
+  color: var(--fg);
+  font:
+    12.5px/1 ui-monospace,
+    'Cascadia Mono',
+    'Consolas',
+    monospace;
+  user-select: text;
+  cursor: text;
+  transition: border-color 80ms linear;
+}
+
+#omnibox::placeholder {
+  color: var(--fg-dim);
+}
+
+
+/* Свечение только тут, а не на всех полях: строка адреса под курсором —
+   единственное поле, которое в этот момент и есть «живое». */
+#omnibox:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--glow);
+}
+
+#reload .ico-stop {
+  display: none;
+}
+
+#reload.loading .ico-reload {
+  display: none;
+}
+
+#reload.loading .ico-stop {
+  display: block;
+}
+
+#bookmark.on {
+  color: var(--accent);
+}
+
+#bookmark.on svg {
+  fill: currentColor;
+}
+
+/* Индикатор загрузки: 1px поверх нижней границы панели. */
+#progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--tabstrip-h) + var(--toolbar-h) - 1px);
+  height: 1px;
+  overflow: hidden;
+}
+
+#progress::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30%;
+  background: var(--accent);
+  animation: sweep var(--dur-spin) linear infinite;
+}
+
+@keyframes sweep {
+  from {
+    left: -30%;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+/* ── Подсказки омнибокса ──────────────────────────────────────────────────────
+   Панель браузера — отдельный слой поверх страницы, поэтому её высота
+   меняется вместе с выпадающим списком: ровно настолько, сколько занимает
+   содержимое, иначе невидимая часть перехватывала бы клики по странице. */
+#suggestions {
+  list-style: none;
+  padding: 4px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-elev);
+}
+
+#suggestions li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  height: 26px;
+  padding: 0 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  border-radius: var(--r-row);
+}
+
+#suggestions li.selected {
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+
+#suggestions .kind {
+  flex: 0 0 auto;
+  width: 74px;
+  font-size: 11px;
+  color: var(--fg-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#suggestions .text {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#suggestions .hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
+  font-size: 11.5px;
+  color: var(--fg-dim);
+}
+
+/* ── Панель под тремя линиями ────────────────────────────────────────────────
+   Не нативное меню: здесь переключатели, цвета и разделы. Живёт в слое панели
+   браузера, поэтому она растёт на его высоту — так же, как под подсказки. */
+#prefs {
+  display: flex;
+  flex-direction: column;
+  align-self: flex-end;
+  /* Занимает всё, что осталось от слоя, — то есть до низа окна.
+     min-height обязателен: без него flex-элемент не может стать ниже
+     своего содержимого, и панель вытягивалась на всю длину списка */
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 360px;
+  margin-right: 6px;
+  border: 1px solid var(--line);
+  border-top: 0;
+  border-radius: var(--r-surface);
+  /**
+   * Грунт, а не плоская заливка.
+   *
+   * Панель стояла на `var(--bg-elev)` без единого пятна света — плоский
+   * прямоугольник рядом с окном, у которого поверхность живая. Это и было
+   * первым из трёх измеренных отличий от установщика.
+   *
+   * Уровень тот же, что был (`--грунт-выше` — те же пятна поверх
+   * `--bg-elev`): панель не темнеет и не светлеет, у неё лишь появляется
+   * то, чего не было, — глубина.
+   */
+  background: var(--грунт-выше);
+}
+
+#prefs[hidden] {
+  display: none;
+}
+
+/* Разделы идут списком сверху вниз и прокручиваются */
+#prefs-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 14px 16px;
+  overflow-y: auto;
+}
+.prefs-text { width:190px; min-width:0; max-width:55%; padding:5px 8px; border:1px solid var(--line); border-radius:var(--r-ctl); background:var(--bg-elev); color:var(--fg); font:inherit; }
+#prefs-catalog { display:grid; gap:2px; }
+.prefs-section { text-align:left; width:100%; padding:8px 6px; border:0; background:transparent; color:var(--fg); font:inherit; cursor:pointer; }
+.prefs-section:hover { background:var(--bg-hover); }
+
+#prefs-body section + section {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+/*
+ * Имя раздела — тем же кеглем, что строки, но ВЕСОМ тяжелее.
+ *
+ * Второй ступенью после заголовка панели. Поднимать кегль здесь нельзя:
+ * разделов девять, и девять крупных строк снова сделали бы всё одинаково
+ * важным — только крупно. Вес отделяет имя от содержимого, не ломая ритма.
+ */
+#prefs-body h2 {
+  margin: 14px 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+/**
+ * ── Раздел панели — карточка со своей обводкой ───────────────────────────────
+ *
+ * Так просил хозяин: «каждый раздел со своей обводкой и возможностью скрыть».
+ * Обводка нужна не для красоты — она отвечает на вопрос «докуда этот раздел»:
+ * в свёрнутом виде разделы стоят вплотную, и без рамки список из девяти
+ * заголовков читается одной кашей.
+ */
+#prefs-body .fold,
+#prefs-body .card {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  /**
+   * Скругление ПОВЕРХНОСТИ, а не капсула.
+   *
+   * Стоял `--r-ctl` — то есть 999px, капсульный радиус кнопок и полей.
+   * На свёрнутом разделе высотой в 36 точек это давало обычную пилюлю
+   * и не бросалось в глаза. Но раздел «Темы» не сворачивается
+   * (`open-always`) и имеет 351 точку в высоту — и 999px превращали его
+   * в ОВАЛ во всю панель. Хозяин увидел это первым: «не нравится кружки...
+   * овалы... в меню что в трёх линиях».
+   *
+   * Я и сам гонялся за этим овалом не там: винил пятна света в грунте,
+   * потом решил, что сквозь панель просвечивают круги домашней. Панель
+   * оказалась непрозрачной, а овалом была сама карточка.
+   *
+   * Правило записано в `theme.css` и нарушено было здесь: «капсула — у того,
+   * что нажимают и в чём набирают; скругление — у поверхностей: панелей,
+   * окон, карточек». Раздел — поверхность.
+   */
+  border-radius: var(--r-surface, 0);
+  /**
+   * Раздел УТОПЛЕН в панель, а не лежит на ней вровень.
+   *
+   * Было `var(--bg-elev)` — ровно та же светлота, что у самой панели.
+   * Девять разделов подряд различались тогда только рамкой, и список
+   * читался решёткой из одинаковых прямоугольников: рамка отвечала сразу
+   * и за «докуда раздел», и за «это отдельная вещь», а вторую работу
+   * светлота делает лучше.
+   *
+   * Взят `--bg` — та же земля, что под всем окном. На тёмной палитре это
+   * читается углублением, на светлой — наоборот, белизной: светлее белого
+   * не бывает, и «утопленное» там показывают светлотой вверх. Направление
+   * разное, правило одно — поверхности РАЗЛИЧАЮТСЯ, а не окантованы.
+   * Ровно это пришлось учесть и в светлой палитре установщика.
+   */
+  background: var(--bg);
+}
+
+#prefs-body .fold h2,
+#prefs-body .card h2 {
+  margin: 0;
+}
+
+/* Раскрытый раздел отделяется от заголовка чертой: иначе первая строка
+   липнет к названию и читается его продолжением */
+#prefs-body .fold.open .fold-body {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+#prefs-body .card h2 {
+  padding-bottom: 6px;
+}
+
+/**
+ * ── Строка расширений ───────────────────────────────────────────────────────
+ *
+ * Один ряд слева от трёх линий. Полоска в цвет темы сворачивает ряд в себя:
+ * она и есть кнопка, и она же — след того, что расширения не исчезли,
+ * а спрятаны. Совсем убрать ряд нельзя: тогда вернуть его было бы нечем.
+ */
+#ext-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  /* Сначала уступают место закреплённые расширения. Меню расширений и
+     системные кнопки остаются доступны даже при длинном наборе значков. */
+  flex: 0 1000 auto;
+  min-width: 37px;
+  max-width: 32%;
+  margin-right: 2px;
+}
+
+#ext-row[hidden] {
+  display: none;
+}
+
+/* Полоска-сворачиватель: узкая вертикальная черта в цвет темы.
+   Та же черта у плеера справа от строки адреса */
+#nowplaying.свёрнута > :not(#np-fold) {
+  display: none !important;
+}
+
+#nowplaying.свёрнута {
+  width: auto;
+  min-width: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+/* Черта — последней, у правого края: при сворачивании плеер ужимается к ней,
+   и она сама стоит на месте, а не ездит вслед за шириной */
+#np-fold {
+  order: 99;
+  margin-left: 4px;
+}
+
+#ext-fold,
+#np-fold {
+  flex: 0 0 auto;
+  width: 5px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.7;
+  cursor: default;
+  transition: opacity var(--dur, 80ms) linear;
+}
+
+#ext-fold:hover,
+#np-fold:hover {
+  opacity: 1;
+}
+
+#ext-pins {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ext-pin {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  flex: 0 0 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--btn-radius, var(--r-ctl));
+  background: none;
+  color: var(--fg-dim);
+  font-size: 12px;
+  cursor: default;
+}
+
+.ext-pin img {
+  width: 16px;
+  height: 16px;
+}
+
+/* Свёрнутая строка: значков нет, полоска и мозаика остались.
+   Три линии и загрузки к строке не относятся и не прячутся вовсе */
+#ext-row.свёрнута #ext-pins {
+  display: none;
+}
+
+/* При нехватке ширины показания доступны через «Ресурсы». Они не должны
+   выталкивать кнопки навигации или занимать всё поле адреса. */
+@media (max-width: 600px) {
+  #load-badge { display: none; }
+}
+
+/**
+ * Список всех расширений. Своим слоем поверх страницы, как щиток:
+ * ему нужен щелчок мимо, чтобы закрыться, а значит и место над всем.
+ */
+/**
+ * ── Шестерёнка рядом с выключателем ─────────────────────────────────────────
+ *
+ * Правил для этой пары не было вовсе — я их просто забыл написать, и потому
+ * шестерёнка не рисовалась, а выключатель уезжал за край панели. Хозяин это
+ * и увидел.
+ *
+ * Место шестерёнки занято всегда, а видна она под курсором — так просил
+ * хозяин. Занято постоянно затем, чтобы выключатель не прыгал вбок,
+ * когда она появляется.
+ */
+.with-gear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.gear {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--btn-radius, var(--r-ctl));
+  background: none;
+  color: var(--fg-dim);
+  opacity: 0;
+  cursor: default;
+  transition: opacity var(--dur, 80ms) linear;
+}
+
+.gear svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+/* Появляется при наведении на строку — и остаётся, пока на ней курсор */
+.row-line:hover .gear,
+.gear:focus-visible {
+  opacity: 1;
+}
+
+.gear:hover {
+  color: var(--accent);
+}
+
+/**
+ * ── Окошки у кнопок каркаса ─────────────────────────────────────────────────
+ *
+ * Небольшое окно под кнопкой: заголовок с «Подробнее» справа, тело и,
+ * у загрузок, общая полоса снизу. Правила общие на оба: расширения
+ * и загрузки — одна и та же вещь, окно у кнопки, и вести себя они должны
+ * одинаково.
+ */
+.popup {
+  position: absolute;
+  /* Плюс строка значков, если она стоит под адресом: окошко должно висеть
+     ПОД ней, а не поверх — см. #ряд-место */
+  top: calc(var(--tabstrip-h) + var(--toolbar-h) + var(--ряд-под, 0px));
+  right: 8px;
+  z-index: 6;
+  width: 300px;
+  max-height: 60vh;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-surface, 8px);
+  background: var(--bg-elev);
+  box-shadow: 0 12px 28px -12px rgb(0 0 0 / 0.55);
+  overflow-y: auto;
+}
+
+.popup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px 6px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
+  font-size: 12.5px;
+}
+
+/* «Подробнее» — в правом верхнем углу, как просил хозяин */
+.popup-more {
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--btn-radius, var(--r-ctl));
+  background: none;
+  color: var(--fg-dim);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: default;
+}
+
+.popup-more:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.popup-empty {
+  padding: 8px 4px;
+  color: var(--fg-dim);
+  font-size: 12px;
+}
+
+/* Строка загрузки: имя и доля сверху, полоса хода под ними, кнопки справа */
+.dl-line {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 8px;
+  padding: 6px 2px;
+  border-top: 1px solid var(--line);
+}
+
+.dl-line:first-child {
+  border-top: 0;
+}
+
+.dl-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+
+.dl-percent {
+  color: var(--fg-dim);
+  font-size: 11.5px;
+  text-align: right;
+}
+
+.dl-bar {
+  grid-column: 1 / -1;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  overflow: hidden;
+}
+
+.dl-bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 200ms linear;
+}
+
+.dl-acts {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 4px;
+}
+
+.dl-acts button {
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--btn-radius, var(--r-ctl));
+  background: none;
+  color: var(--fg-dim);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: default;
+}
+
+.dl-acts button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Полоса снизу — про все загрузки разом, а не про одну */
+.dl-total {
+  height: 4px;
+  margin: 8px -8px -8px;
+  background: var(--bg-hover);
+  overflow: hidden;
+}
+
+.dl-total i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 200ms linear;
+}
+
+.ext-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ext-open {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 30px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--r-row, 6px);
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: default;
+}
+
+.ext-open img {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.ext-open span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ext-pin-btn {
+  flex: 0 0 auto;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--btn-radius, var(--r-ctl));
+  background: none;
+  color: var(--fg-dim);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: default;
+}
+
+.ext-pin-btn.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ext-empty {
+  padding: 8px 6px;
+  color: var(--fg-dim);
+  font-size: 12px;
+}
+
+/**
+ * ── Витрина тем ─────────────────────────────────────────────────────────────
+ *
+ * Три карточки в ряд, остальные вбок. Ширина считается от ширины поля,
+ * а не задана числом: панель тянется мышью, и карточка в 90 точек на широкой
+ * панели оставляла бы половину ряда пустой.
+ *
+ * Родной полосы прокрутки нет: у ряда в 96 точек она съедает четверть высоты
+ * и показывается только под курсором. Своя стоит ниже — тонкая, видна всегда.
+ */
+.strip {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  /* Ряд листается по карточкам, а не останавливается посередине */
+  scroll-snap-type: x proximity;
+}
+
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+.strip-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 2 * 6px) / 3);
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-row, 6px);
+  /* Карточка красится СВОЕЙ палитрой: `data-theme` на ней самой */
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+  scroll-snap-align: start;
+}
+
+.theme-card:hover {
+  border-color: var(--fg-dim);
+}
+
+/* Выбранная — обводкой своего же акцента. Не галочкой одной: обводка видна
+   с одного взгляда на весь ряд, галочка требует прочесть каждую подпись */
+.theme-card.on {
+  border-color: var(--accent);
+  box-shadow: var(--glow, none);
+}
+
+/* Мини-окно: полоса вкладок, строка адреса, страница с плитками.
+   Те же части, что и в примерах на знакомстве, — вещь одна */
+.tc-win {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  height: 46px;
+  padding: 3px;
+  border-radius: 3px;
+  background: var(--bg-elev);
+}
+
+.tc-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.tc-tabs i {
+  width: 22px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--bg-hover);
+}
+
+.tc-tabs .tc-tab {
+  background: var(--accent);
+}
+
+.tc-omni {
+  height: 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+.tc-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 1 1 auto;
+}
+
+.tc-page i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+}
+
+.tc-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--fg);
+}
+
+/* Галочка справа от названия — так просил хозяин. Пустая рамка у невыбранной:
+   иначе подпись прыгает вбок в тот миг, когда тему выбирают */
+.tc-check {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}
+
+.theme-card.on .tc-check {
+  border-color: var(--accent);
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+}
+
+/**
+ * Галочка — НАСТОЯЩАЯ галочка, двумя сторонами рамки.
+ *
+ * Была одна диагональ во всю клетку: `linear-gradient(45deg, …)` цветом
+ * фона. Хозяин: «при выборе темы в флажке есть чёрная линия, убери её» —
+ * и он прав, потому что это и была просто линия. Одна диагональ не читается
+ * птичкой ни при каком размере: у птички два штриха разной длины и излом
+ * между ними, а тут был перечёркнутый квадрат.
+ *
+ * Рисуем тем же приёмом, что галочка в установщике (`.кв::after`): две
+ * стороны рамки, повёрнутые на 45°. Излом получается настоящий, и в 12 точек
+ * это читается вернее шрифтового знака — ради чего прежняя фигура
+ * и затевалась.
+ */
+.theme-card.on .tc-check::after {
+  content: '';
+  width: 6px;
+  height: 3px;
+  border-left: 1.6px solid var(--bg);
+  border-bottom: 1.6px solid var(--bg);
+  transform: rotate(-45deg) translate(0.5px, -0.5px);
+}
+
+/**
+ * ── Галерея обоев ───────────────────────────────────────────────────────────
+ *
+ * Карточки шире и ниже, чем у тем: там мини-браузер, здесь фотография,
+ * и ей нужна форма экрана, а не квадрат. Числа тем не подходят, поэтому
+ * у ряда свой класс, а не второй набор правил поверх чужого.
+ */
+.strip-row.wide {
+  grid-auto-columns: calc((100% - 2 * 6px) / 2.5);
+}
+
+.bg-card {
+  position: relative;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--r-row, 6px);
+  background: var(--bg-elev);
+  overflow: hidden;
+  cursor: default;
+  scroll-snap-align: start;
+}
+
+.bg-card img {
+  display: block;
+  width: 100%;
+  height: 58px;
+  object-fit: cover;
+}
+
+/* Выбранная — обводкой в цвет темы, как просил хозяин. Двойной толщины:
+   на пёстрой фотографии однопиксельная линия теряется */
+.bg-card.on {
+  border-color: var(--accent);
+}
+
+/* Крестик — только у своих картинок, и только под курсором: он мал,
+   а промахнуться им по выбору картинки было бы обидно */
+.bg-drop {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--fg-dim);
+  opacity: 0;
+  transition: opacity var(--dur, 80ms) linear;
+}
+
+.bg-drop::before,
+.bg-drop::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  left: 4px;
+  width: 8px;
+  height: 1px;
+  background: currentColor;
+}
+
+.bg-drop::before {
+  transform: rotate(45deg);
+}
+
+.bg-drop::after {
+  transform: rotate(-45deg);
+}
+
+.bg-card:hover .bg-drop {
+  opacity: 1;
+}
+
+.bg-drop:hover {
+  background: var(--danger);
+  color: var(--on-danger);
+}
+
+/* Две отметки источника: наши обои или своя картинка. Радиокнопки, а не
+   галочки: выбрать можно ровно одно, и форма должна об этом говорить */
+#bg-choice .pick {
+  padding: 3px 0;
+  cursor: default;
+}
+
+/* Галерея начинается отступом от отметок: без него подпись «Пользовательский»
+   липнет к первой картинке и читается её названием */
+#bg-gallery {
+  margin-top: 6px;
+}
+
+/**
+ * Две кнопки под галереей переносятся, когда не влезают в строку.
+ *
+ * Панель тянется мышью и бывает узкой: «Добавить свой фоновый рисунок»
+ * и «Получить больше» рядом требуют трёхсот с лишним точек, и на узкой
+ * панели вторая обрезалась по букве. Перенос честнее обрезки.
+ */
+/*
+ * Одна кнопка слева, вторая справа — так перечислил хозяин. Переносятся
+ * только когда панель совсем узкая: обрезать подпись хуже, чем перенести.
+ */
+#bg-gallery .row-line {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+#bg-gallery .row-line .pbtn {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/**
+ * Своя полоса прокрутки под витриной: тонкая, видна всегда, тянется мышью.
+ */
+.strip-bar {
+  height: 4px;
+  margin: 4px 0 2px;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  overflow: hidden;
+  cursor: default;
+}
+
+.strip-thumb {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--fg-dim);
+}
+
+/**
+ * ── Светлота: одно поле на три доли ─────────────────────────────────────────
+ *
+ * Обводка ПЕРЕЕЗЖАЕТ от доли к доле, проходя через среднюю. Это не украшение:
+ * переезд говорит, что величина одна и у неё три положения, — а три кнопки,
+ * гаснущие и загорающиеся, читались бы тремя независимыми выключателями.
+ */
+/**
+ * Поле светлоты. Форма — ТА ЖЕ, что у кнопок (`--btn-radius`).
+ *
+ * Здесь был настоящий разнобой, и хозяин его увидел: «граница круглая,
+ * обводка прямоугольная». Поле брало общий `--r-ctl` (всегда капсула),
+ * бегунок — форму кнопок, а у хозяина кнопки прямоугольные. Выходило
+ * три формы в одном месте: круглое поле, угловатый бегунок и угловатая
+ * подсветка внутри него.
+ *
+ * Теперь форма одна на всё поле. Кнопки округлые — и поле, и бегунок
+ * капсулой; прямоугольные — оба прямоугольные.
+ */
+/**
+ * Поле светлоты. Долей столько, сколько их в `MODES` (`chrome.js`), —
+ * число приходит оттуда же, откуда сам список.
+ *
+ * Тройка стояла здесь числом, и рядом такая же тройка стояла в ширине
+ * бегунка. Появилась четвёртая светлота — и доли уехали в две строки,
+ * а бегунок накрыл полторы. Ни одного промаха при этом не видно в коде:
+ * список в скрипте, числа в стилях.
+ */
+.seg {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--долей, 3), 1fr);
+  margin: 8px 0 4px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--btn-radius, var(--r-ctl, 0));
+  background: var(--bg);
+  /* Поле обрезает всё своё: что бы ни ехало внутри, за его край оно
+     не выйдет ни на точку */
+  overflow: hidden;
+}
+
+/**
+ * Бегунок обводки.
+ *
+ * **Форма — та же, что у кнопок** (`--btn-radius`). Прежде тут стоял общий
+ * `--r-ctl`, и бегунок жил своей формой: хозяин выбирал округлые кнопки,
+ * а по полю ездило что-то со своими углами.
+ *
+ * **Кольцо ровно одно.** Прежде их было два: своя рамка плюс `--glow`,
+ * а он начинается с `0 0 0 1px` — то есть со сплошного кольца. Два кольца
+ * в точку толщиной на элементе дробной ширины (треть поля — 100,67 точки)
+ * ложатся по разным пикселям, и на ходу это читается вторым, угловатым
+ * контуром. Поэтому здесь `--glow-bare` — то же свечение без кольца;
+ * оно для того и заведено.
+ */
+.seg-mark {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / 3);
+  height: calc(100% - 4px);
+  border: 1px solid var(--accent);
+  border-radius: var(--btn-radius, var(--r-ctl, 0));
+  background: var(--btn-on-bg, transparent);
+  box-shadow: var(--glow-bare, none);
+  /* Ход заметно медленнее обычных 80 мс: за 80 переезд не читается как
+     переезд — глаз видит скачок */
+  transition: transform 220ms cubic-bezier(0.3, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+/**
+ * Доли поля. Форма у них та же, что у бегунка, и это не украшение.
+ *
+ * Общее правило `button:hover` красит подложкой ЛЮБУЮ кнопку, а у доли
+ * своей формы не было — и при наведении под скруглённой обводкой появлялся
+ * жёсткий прямоугольник. С краю он выползал из-под неё, и на малом масштабе
+ * это читается как мыло вокруг кнопки и обводки. Хозяин так и сказал:
+ * «мылит кнопки и обводку, не сам текст».
+ *
+ * Коробка доли совпадает с коробкой бегунка: у поля отступ в две точки,
+ * и доли стоят ровно там же, где ездит бегунок. Значит одна форма на двоих
+ * — и подложка ложится точно под обводку, а не вокруг неё.
+ */
+.seg button {
+  position: relative;
+  z-index: 1;
+  height: 26px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--btn-radius, var(--r-ctl, 0));
+  background: none;
+  color: var(--fg-dim);
+  font: inherit;
+  font-size: 12px;
+  cursor: default;
+  transition: color var(--dur, 80ms) linear;
+}
+
+.seg button:hover {
+  color: var(--fg);
+}
+
+/* Выбранной подложка не нужна вовсе: её уже отмечает бегунок, а вторая
+   пометка поверх первой только мутит обе */
+.seg button.on:hover {
+  background: none;
+}
+
+.seg button.on {
+  color: var(--btn-on-color, var(--accent));
+}
+
+/**
+ * ── Интерфейс: каркас поверх домашней ───────────────────────────────────────
+ *
+ * Тот же приём, что у прозрачной рейки: страница занимает окно целиком,
+ * каркас лежит над ней прозрачным видом, и просвечивают настоящие обои,
+ * а не фон окна.
+ *
+ * Размытие — `backdrop-filter`, и вот честная оговорка: оно размывает то,
+ * что лежит в ЭТОМ же слое, а страница — другой вид Electron, и её
+ * содержимое сюда не попадает. Поэтому «размытый» даёт мягкую дымку
+ * поверх просвечивающих обоев, а не оптическое размытие картинки под собой.
+ * Обещать второе было бы враньём: между двумя видами Chromium этого не умеет.
+ *
+ * Числа приезжают свойствами из панели: их сто значений на каждый микшер,
+ * и класс на каждое — это сто правил.
+ */
+body.over #tabstrip,
+body.over #grab,
+body.over #toolbar {
+  background: color-mix(in srgb, var(--bg) calc(var(--ui-opacity, 0.42) * 100%), transparent);
+}
+
+body.over #bar {
+  background: color-mix(in srgb, var(--bg) calc(var(--ui-opacity, 0.42) * 100%), transparent);
+}
+
+body.over-blur #tabstrip,
+body.over-blur #grab,
+body.over-blur #toolbar,
+body.over-blur #bar {
+  backdrop-filter: blur(var(--ui-blur, 14px));
+}
+
+/**
+ * Виньетка: затемнение под нижней кромкой каркаса. Не тень и не рамка —
+ * она отделяет каркас от картинки, не рисуя новой линии.
+ *
+ * **Рисуем полосой, а не `box-shadow`, ради левого угла.** Тень элемента
+ * ложится под ним ВО ВСЮ ширину, в том числе под первыми сорока четырьмя
+ * точками, — а там не страница, а боковая рейка, и верх затемнял её собой.
+ * Хозяин это увидел: «виньетка от верхней части заходит на левую панель».
+ * Оборвать тень нельзя, полосу — можно.
+ *
+ * У рейки виньетка своя и уходит вбок (см. `sidebar.css`): вместе они дают
+ * одну тень по внешнему краю буквы «Г», а не две, наложенные друг на друга
+ * в углу.
+ */
+body.over #toolbar::after {
+  /* Внутри общего верха виньетка рисовала резкую полосу поверх соседнего ряда. */
+  content: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 14px;
+  background: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / calc(var(--ui-vignette, 0) * 0.55)),
+    transparent
+  );
+  /* Полоса висит НАД страницей: щелчки сквозь неё должны проходить */
+  pointer-events: none;
+}
+
+/* Рейка стоит у левого края — виньетка каркаса начинается после неё */
+body.over.rail-left #toolbar::after {
+  left: var(--rail-w);
+}
+
+/**
+ * «Элементы фона» — подложка под тем, что стоит НА картинке: вкладками,
+ * кнопками, закладками. Без неё на светлой фотографии значки пропадают,
+ * с полной — стекло превращается в сплошную панель. Отсюда и микшер.
+ */
+body.over .tab,
+body.over #bar .bar-item,
+body.over #toolbar .icon,
+body.over .ext-pin,
+body.over #downloads {
+  background: color-mix(in srgb, var(--bg-elev) calc(var(--ui-tint, 0.3) * 100%), transparent);
+}
+
+/* Управление окном — часть общей полосы, без трёх отдельных подложек. */
+#toolbar #window-controls .icon {
+  background: none;
+  color: var(--fg-dim);
+}
+
+#toolbar #window-controls .icon:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+
+#toolbar #window-controls .icon.danger:hover {
+  background: var(--danger);
+  color: var(--on-danger);
+}
+
+/* Активная вкладка своей метки не теряет: её заливка задана видом
+   и обязана перебивать подложку — иначе на стекле активная неотличима */
+body.over .tab.active {
+  background: var(--tab-on-bg, var(--bg-elev));
+}
+
+/**
+ * ── Режим фокусировки ───────────────────────────────────────────────────────
+ *
+ * Каркас приглушается целиком: вкладки, закладки, кнопки, значки. Страница
+ * не трогается — она в своём слое, и до неё эти правила не достают вовсе.
+ *
+ * Выцветание, а не затемнение: тёмный каркас от затемнения слился бы с фоном,
+ * а обесцвеченный остаётся читаемым при любой теме.
+ */
+body.focus #tabstrip,
+body.focus #toolbar,
+body.focus #bar {
+  /* Приглушаем цвет, не растрируя целую полосу фильтром: мелкие буквы
+     сохраняют чёткость, а клавиатура возвращает контраст так же, как мышь. */
+  --fg: var(--fg-dim);
+}
+
+/* Под курсором раздел возвращается к обычному виду: фокусировка не должна
+   мешать работать с тем, к чему человек уже потянулся */
+body.focus #tabstrip:hover,
+body.focus #toolbar:hover,
+body.focus #bar:hover,
+body.focus #tabstrip:focus-within,
+body.focus #toolbar:focus-within,
+body.focus #bar:focus-within {
+  --fg: inherit;
+}
+
+/* Значки серым: выключатель называется «окрасить», и выключенный
+   он гасит цвет, а не включает его */
+body.grey-icons #brand,
+body.grey-icons #toolbar .icon svg,
+body.grey-icons .bar-icon {
+  filter: grayscale(1);
+  color: var(--fg-dim);
+}
+
+/* ── Сворачивающийся раздел ──────────────────────────────────────────────────
+   Заголовок — настоящая кнопка, а не `div` с курсором: под Tab он должен
+   вставать и по Enter срабатывать, как обещано в PLAN. `aria-expanded`
+   говорит то же, что и стрелка, — тем, кто её не видит. */
+#prefs-body .fold-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+#prefs-body .fold-head:hover {
+  color: var(--accent);
+}
+
+/* Стрелка смотрит вверх, пока список скрыт, и вниз — когда раскрыт.
+   Так попросил хозяин, и так же она ведёт себя везде: направление
+   показывает, куда поедет содержимое, а не где оно сейчас. */
+#prefs-body .chev {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--dur, 80ms) linear;
+}
+
+#prefs-body .fold.open .chev {
+  transform: rotate(180deg);
+}
+
+#prefs-body .fold-body {
+  display: none;
+}
+
+#prefs-body .fold.open .fold-body {
+  display: block;
+}
+
+.prefs-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  padding: 10px 10px 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+/**
+ * Заголовок панели — ЗАГОЛОВОК, а не строка того же кегля.
+ *
+ * Стоял 13px весом 500 — ровно как обычная строка настройки. Глазу негде
+ * было зацепиться, входя в панель: всё весило одинаково, и «Настройки»
+ * читались просто первой строчкой списка.
+ *
+ * 15px против 13px — шаг небольшой нарочно: панель шириной 360 точек,
+ * и крупнее здесь читалось бы криком. Важна не величина, а то, что размер
+ * ОТЛИЧАЕТСЯ: одна ступень уже даёт точку входа.
+ */
+.prefs-head b {
+  flex: 1 1 auto;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+#prefs-body h3 {
+  margin: 14px 0 8px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
+.row-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.row-line.between {
+  justify-content: space-between;
+}
+
+/* `hidden` прячет только то, у чего display не задан своим правилом:
+   у флекса он задан, и строка оставалась видимой при выставленном hidden */
+.row-line[hidden] {
+  display: none;
+}
+
+.pbtn {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  /**
+   * Форма — по выбору «Форма кнопок», как у кнопок в полосе закладок
+   * и у выбора языка. Прежде здесь стоял общий `--r-ctl`, то есть капсула
+   * всегда: человек выбирал прямоугольные кнопки, а в панели они оставались
+   * круглыми. Хозяин на это и указал — «какой-то непорядок»: в одном окне
+   * стояли рядом круглые кнопки и угловатое поле светлоты.
+   */
+  border-radius: var(--btn-radius, var(--r-ctl));
+  color: var(--fg);
+  font-size: 12.5px;
+  /* Подпись в одну строку: у кнопки со значком «Очистить» перенос разрывал
+     её пополам — мусорка оставалась на одной строке, слово уезжало на другую */
+  white-space: nowrap;
+}
+
+/* Кнопка со значком: значок слева, подпись справа. Значок здесь не украшение
+   — мусорка говорит «безвозвратно» быстрее, чем слово «очистить» */
+.pbtn .ico-bin {
+  width: 13px;
+  height: 13px;
+  margin-right: 5px;
+  vertical-align: -2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pbtn.danger:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Серверы — списком сверху вниз: у каждого имя, протокол и отклик.
+   Россыпью значков нельзя: по одному имени не видно, что за протокол */
+.vpn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.vpn-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r-row);
+  color: var(--fg-dim);
+  font-size: 12px;
+  text-align: left;
+}
+
+.vpn-row:hover {
+  border-color: var(--line);
+  color: var(--fg);
+}
+
+.vpn-row.on {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+/* Имя длинное и обрезается многоточием, остальное держит свою ширину:
+   у элемента флекса наименьшая ширина равна содержимому, отсюда min-width.
+
+   Шрифт с флагами дописан ради имён из подписки: провайдеры ставят
+   в начало флаг страны, а системный шрифт панели знаков флага не имеет —
+   и «🇸🇪Швеция» читалось как «seШвеция» */
+/* Код страны — своей меткой слева: Windows флагов стран не рисует,
+   и в имени они выглядели слипшимися буквами («seШвеция») */
+.vpn-country {
+  flex: 0 0 auto;
+  min-width: 20px;
+  font-family: ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--fg-dim);
+  opacity: 0.85;
+}
+
+.vpn-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vpn-kind {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--fg-dim);
+  opacity: 0.8;
+}
+
+.vpn-ping {
+  flex: 0 0 auto;
+  min-width: 46px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--fg-dim);
+}
+
+.vpn-ping.bad {
+  opacity: 0.55;
+}
+
+/* Крестик показывается под курсором: в покое список должен читаться,
+   а не рябить значками у каждой строки */
+.vpn-drop {
+  flex: 0 0 auto;
+  width: 16px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--fg-dim);
+  opacity: 0;
+  transition: opacity 80ms;
+}
+
+.vpn-row:hover .vpn-drop {
+  opacity: 0.7;
+}
+
+.vpn-drop:hover {
+  opacity: 1;
+  color: var(--danger, var(--fg));
+}
+
+/* Поле и его кнопки — одна строка ввода, а не поле и «что-то ниже».
+   Подпись сверху: пустое поле с одним серым намёком не говорит,
+   что в него класть и что случится после */
+.field-label {
+  display: block;
+  margin: 12px 0 5px;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--fg-dim);
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Поле тянется, кнопки держат свою ширину. `min-width: 0` — потому что
+   у элемента флекса наименьшая ширина равна содержимому, и длинный адрес
+   иначе распирает строку, выталкивая кнопки за край панели */
+.field-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 28px;
+  padding: 0 9px;
+  background: var(--bg-soft, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 12.5px;
+  transition: border-color 80ms;
+}
+
+.field-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Намёк приглушённым текстом, а не цветом линий: на светлой теме линия
+   почти сливается с фоном, и намёк прочесть нельзя — та же беда была
+   у поля поиска в панели Inner Voice */
+.field-row input::placeholder {
+  color: var(--fg-dim);
+  opacity: 0.75;
+}
+
+.field-row .pbtn {
+  flex: 0 0 auto;
+}
+
+/*
+ * Подвал меню: версия и обновления. Отбит чертой, как разделы между собой,
+ * но без рамки раздела — это не настройка, а подпись внизу списка.
+ */
+#prefs-about {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+#prefs-about #about-version {
+  color: var(--fg-dim);
+}
+
+#prefs-about .chips {
+  margin-top: 8px;
+}
+
+.note {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--fg-dim);
+}
+
+/* Почему варианта в списке нет: причина правила, а не молчаливая пропажа */
+.note.нет-варианта {
+  margin-top: 4px;
+  color: var(--accent);
+}
+
+.note.нет-варианта[hidden] {
+  display: none;
+}
+
+/* Темы выбираются образцами, а не списком: цвет виден сразу */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 10px 0 7px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  color: var(--fg-dim);
+  font-size: 12.5px;
+}
+
+.chip.on {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.chip i {
+  width: 13px;
+  height: 13px;
+  border: 1px solid var(--line);
+}
+
+#accent {
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: none;
+  cursor: default;
+}
+
+/* ── Полоса закладок ─────────────────────────────────────────────────────────
+   Высота 28 точек и это НЕ вкус: ровно на столько `window.js` (BAR_HEIGHT)
+   сдвигает страницу вниз. Разойдись числа — под полосой появилась бы щель
+   или полоса резалась бы краем страницы. */
+#bar {
+  display: flex;
+  flex: 0 0 28px;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  padding: 0 6px;
+  /* Черты сверху нет — см.  */
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* Прячется полоса общим правилом из `theme.css`: `display` перебивал бы
+   атрибут `hidden`, и пустая полоса проступала бы под панелью */
+
+/**
+ * Что видно во включённой, но пустой панели.
+ *
+ * Приглушённым и мелким: это подсказка, а не содержимое, и она не должна
+ * выглядеть как закладка, которую можно нажать.
+ */
+#bar-empty {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0 4px;
+  color: var(--fg-dim);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Пустой ряд не занимает места: иначе он делил бы полосу с подсказкой
+   пополам и выталкивал её на середину — а читается она у левого края */
+#bar-items:empty {
+  flex: 0 0 auto;
+}
+
+#bar-items {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.bar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 180px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid transparent;
+  border-radius: var(--btn-radius, var(--r-ctl));
+  background: none;
+  color: var(--fg-dim);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: default;
+  transition: color 80ms linear, background-color 80ms linear;
+}
+
+.bar-item:hover {
+  color: var(--fg);
+  background: var(--bg-hover);
+}
+
+/* Тем же приглушением и тем же числом, что у вкладки: обе полосы тянутся
+   одинаково, и выглядеть это обязано одинаково — иначе разница читается
+   как поломка одной из них */
+.bar-item.dragging {
+  opacity: 0.4;
+}
+
+.bar-item:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.bar-icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+/* Буква вместо значка — у закладок, приехавших из копии: значка у них нет
+   и взять его неоткуда, а пустое место читалось бы как «не загрузилось» */
+.bar-letter {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  font-size: 9px;
+  font-style: normal;
+  line-height: 1;
+}
+
+.bar-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#bar-more {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+}
+
+/* Четвёртый раз в проекте: `display` из правила `.icon` перебивает атрибут
+   `[hidden]`, и кнопка «ещё» стояла в полосе при трёх закладках на весь экран.
+   Атрибут сам по себе слабее любого правила с display — писать его прямо. */
+#bar-more[hidden],
+#bar-rest[hidden],
+.bar-item[hidden] {
+  display: none;
+}
+/* Что не влезло в полосу — столбиком под кнопкой. Поверх страницы: каркас
+   выше страницы по слоям, и список ложится на неё, не двигая её */
+#bar-rest {
+  position: absolute;
+  right: 6px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 180px;
+  max-width: 280px;
+  max-height: 60vh;
+  padding: 4px;
+  border: 1px solid var(--line);
+  background: var(--bg-elev);
+  overflow-y: auto;
+}
+
+#bar-rest .bar-item {
+  max-width: none;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+
+
+/* Переключатель переехал в ui.css — комментарий «такой же, как в ресурсах
+   и настройках» был неправдой: они разошлись на три разных вида */
+
+/* ── Щиток ───────────────────────────────────────────────────────────────────
+   Своё окно, а не нативное меню: здесь счётчики, выключатели и раскрывающийся
+   список — меню такого не умеет. Живёт в слое панели, поэтому она растёт
+   на его высоту, как под подсказки омнибокса. */
+/* Верхние углы прямые и место под свой значок — по тем же доводам,
+   что у `#tr-pop`: оба висят под верхней панелью и оба обязаны приставать
+   к ней вплотную, а не двумя вырезами с просветом */
+#shield-panel {
+  align-self: flex-end;
+  flex: 0 0 auto;
+  width: 360px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--line);
+  border-top: 0;
+  border-radius: 0 0 var(--r-surface) var(--r-surface);
+  background: var(--bg-elev);
+}
+
+#shield-panel[hidden] {
+  display: none;
+}
+
+.sp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sp-head b {
+  font-weight: 500;
+}
+
+#sp-site {
+  margin: 2px 0 12px;
+  font-family: ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sp-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--fg-dim);
+}
+
+.sp-line b {
+  flex: 0 0 auto;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Пояснение под строкой участков: тише самой строки, но читаемое.
+   Раньше цвет брался из `--muted`, которого в теме нет вовсе, — то есть
+   работало запасное значение `--fg`, приглушённое прозрачностью. Цвет
+   уходил из-под темы, а прозрачность роняла его ниже порога читаемости. */
+.sp-note {
+  margin-top: 4px;
+  font-size: var(--t-xs);
+  line-height: 1.35;
+  color: var(--fg-dim);
+}
+
+.sp-btn {
+  width: 100%;
+  height: 26px;
+  margin-top: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  color: var(--fg);
+  text-align: left;
+}
+
+.sp-btn.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sp-more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 26px;
+  margin-top: 14px;
+  padding: 0 10px 0 0;
+  border-top: 1px solid var(--line);
+  color: var(--fg-dim);
+  font-size: 12.5px;
+}
+
+.sp-more svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: square;
+  transition: transform 80ms linear;
+}
+
+.sp-more.open svg {
+  transform: rotate(180deg);
+}
+
+#sp-list {
+  list-style: none;
+  max-height: 190px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+#sp-list[hidden] {
+  display: none;
+}
+
+#sp-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 2px;
+  font-family: ui-monospace, 'Cascadia Mono', 'Consolas', monospace;
+  font-size: 11.5px;
+  color: var(--fg-dim);
+}
+
+#sp-list li span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#sp-list .none {
+  color: var(--fg-dim);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+/* ── Поиск по странице ─────────────────────────────────────────────────────
+   Панель прижата к левому верхнему углу и заметно уже страницы: правый край
+   уведён влево, левый отступ чуть больше — так под ней остаётся видно текст. */
+#findbar {
+  display: flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 2px;
+  width: min(330px, calc(100% - 56px));
+  height: 30px;
+  margin-left: 28px;
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-top: 0;
+  /* Панель поиска по странице свисает с полосы адреса: скругление только
+     снизу, сверху она примыкает вплотную */
+  border-radius: 0 0 var(--r-surface) var(--r-surface);
+  background: var(--bg-elev);
+}
+
+#findbar[hidden] {
+  display: none;
+}
+
+#find-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 22px;
+  margin: 0 6px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  background: var(--bg-sunk);
+  color: var(--fg);
+  font:
+    12.5px/1 ui-monospace,
+    'Cascadia Mono',
+    'Consolas',
+    monospace;
+  user-select: text;
+  cursor: text;
+}
+
+#find-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+#find-count {
+  flex: 0 0 auto;
+  min-width: 56px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--fg-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+#find-count.none {
+  color: var(--danger);
+}
+
+#findbar .icon {
+  height: 22px;
+}
+
+/* Строка с переключателем в щитке: подпись слева, ползунок справа.
+   `align-items: center`, а не `baseline` как у строк со счётом, — у ползунка
+   базовой линии нет, и по ней он уезжал вверх */
+.sp-line.sp-toggle {
+  align-items: center;
+}
+
+.sp-line.sp-toggle span {
+  flex: 1 1 auto;
+}
+
+/* Догадка по субтитрам без самого проматывания смысла не имеет: она ищет,
+   что промотать. При выключенном верхнем нижний гаснет — но остаётся виден,
+   чтобы человек понимал, что она есть и почему сейчас недоступна */
+.sp-line.off {
+  opacity: 0.45;
+}
+
+/* ── Поля панели под тремя линиями ───────────────────────────────────────────
+   Списки и ползунки здесь появились вместе с настройками, переехавшими
+   со страницы. Вид тот же, что у полей на самой странице настроек: одно
+   и то же поле в двух местах не должно выглядеть двумя разными. */
+#prefs-body select {
+  flex: 0 1 auto;
+  max-width: 58%;
+  height: var(--ctl-h, 26px);
+  min-height: 24px;
+  padding: 0 22px 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  background: var(--bg-elev);
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  cursor: default;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 0h9L4.5 6z' fill='%23787774'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+}
+
+#prefs-body select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Ползунок и число рядом: число не даёт ползунку разъезжаться по ширине */
+.with-out {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+}
+
+.with-out input[type='range'] {
+  width: 110px;
+  accent-color: var(--accent);
+  cursor: default;
+}
+
+.with-out output {
+  min-width: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-dim);
+}
+
+/* ── «Сохранить пароль?» ─────────────────────────────────────────────────────
+   Полоса под строкой адреса. Не окно поверх страницы: окно перекрывает то,
+   ради чего человек и вошёл, а полоса просто отодвигает страницу вниз —
+   и уезжает, как только на неё ответили. */
+#pass-offer,
+#update-offer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--line);
+  -webkit-app-region: no-drag;
+}
+
+#pass-offer[hidden],
+#update-offer[hidden] {
+  display: none;
+}
+
+#pass-offer > svg,
+#update-offer > svg {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+#pass-text,
+#update-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+#pass-title,
+#update-title {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+/* Кому и куда — тем же тусклым, что и все объяснения: эта ступень держит
+   контраст 4,5 : 1 нарочно, её читают */
+#pass-who,
+#update-who {
+  font-size: 11px;
+  color: var(--fg-dim);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Страницу открыли по http. Не запрет — предупреждение: человек должен
+   знать, что пароль он уже отправил открытым, а запись это запомнит
+   и будет помечать подсказку на таких страницах */
+#pass-http {
+  font-size: 11px;
+  color: var(--danger);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#pass-http[hidden] {
+  display: none;
+}
+
+/* «Сохранить» — главная кнопка, и вид у неё тот же, что у включённой
+   кнопки везде в браузере: выбор оформления действует и здесь */
+#pass-save {
+  border-color: var(--accent);
+  background: var(--btn-on-bg, transparent);
+  color: var(--btn-on-color, var(--accent));
+  box-shadow: var(--btn-on-shadow, none);
+}
+
+/* ── Перевод страницы ────────────────────────────────────────────────────────
+   Значок в строке адреса — такой же, как сердечко закладки рядом. Одеть его
+   надо было сразу: без размеров и цвета кнопка есть в разметке, но на экране
+   её нет вовсе — ровно на это и пожаловался хозяин. */
+/* Кнопка «картинка в картинке» — тем же размером и цветом, что значок
+   перевода рядом: они стоят в одном ряду и обязаны выглядеть одинаково */
+#pip-page {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-ctl);
+  color: var(--fg-dim);
+}
+
+#pip-page svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+#pip-page:hover {
+  color: var(--fg);
+}
+
+#translate,
+#media-dl,
+#shot {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-ctl);
+  color: var(--fg-dim);
+}
+
+#translate svg,
+#media-dl svg,
+#shot svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#translate:hover,
+#media-dl:hover,
+#shot:hover {
+  color: var(--fg);
+}
+
+/* Переведённая страница — значок горит акцентом, как всё включённое */
+#translate.on {
+  color: var(--accent);
+}
+
+#translate[hidden],
+#media-dl[hidden],
+#shot[hidden] {
+  display: none;
+}
+
+/* Окошко от значка. Стоит справа, как щиток, и так же не двигает страницу:
+   каркас на время подрастает, а страница остаётся на месте.
+
+   ── Верхние углы прямые ──────────────────────────────────────────────────
+   Стояло `border-radius: var(--r-surface)` — на ВСЕ четыре угла, при
+   `border-top: 0`. То есть окошко висело под верхней панелью со скруглённым
+   верхом и без верхней рамки: там, где оно должно приставать к панели
+   вплотную, оставались два выреза с просветом, и стык читался как щель.
+   Хозяин сказал об этом прямо — «неправильно стыкуется с верхней панелью».
+
+   Скругляем только низ: верх — это линия отрыва от панели, и её быть
+   не должно вовсе.
+
+   `margin-right` здесь больше нет: окошко ставится под свой значок замером,
+   в `подЗначок`. Число 74 было мерой от старого ряда значков и промахивалось
+   мимо значка почти на полтораста точек. */
+#tr-pop {
+  align-self: flex-end;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 260px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--line);
+  border-top: 0;
+  border-radius: 0 0 var(--r-surface) var(--r-surface);
+  background: var(--bg-elev);
+}
+
+#tr-pop[hidden] {
+  display: none;
+}
+
+.tr-line {
+  font-size: 12px;
+  color: var(--fg-dim);
+}
+
+#tr-lang {
+  height: var(--ctl-h, 28px);
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--btn-radius, var(--r-ctl));
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+}
+
+#tr-lang:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.pbtn.wide {
+  width: 100%;
+}
+
+/* Про уход текста к Google — здесь же, до нажатия, а не подсказкой
+   под курсором: человек должен прочесть это, когда решает */
+.tr-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--fg-dim);
+}
+
+/* ── Спрос разрешения ────────────────────────────────────────────────────────
+   Та же полоса под строкой адреса, что и «Сохранить пароль?»: оба говорят
+   о том, что случится, и оба ждут решения. */
+/**
+ * Спрос разрешения — окошко у строки адреса, а не полоса во всю ширину.
+ *
+ * Полоса растягивалась на всё окно и сдвигала страницу вниз: вопрос
+ * на две строки отбирал у сайта место и не говорил главного — о КАКОЙ
+ * странице речь. Хозяин попросил окошко со стрелкой к адресу, и это
+ * правильнее: стрелка отвечает на вопрос «кто просит» раньше слов.
+ *
+ * Место по горизонтали ставит `chrome.js`: оно считается от строки адреса,
+ * а её ширина зависит от того, сколько значков сейчас внутри.
+ */
+#perm-ask {
+  /* Место ставит chrome.js: считается от строки адреса, а её ширина
+     зависит от того, сколько значков сейчас внутри */
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 340px;
+  max-width: calc(100vw - 24px);
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-surface);
+  background: var(--bg-elev);
+  box-shadow: 0 10px 24px -12px #000;
+  -webkit-app-region: no-drag;
+}
+
+/* Стрелка к строке адреса: повёрнутый квадрат с теми же рамкой и фоном.
+   Верхние две стороны прячутся под самим окошком, и остаётся уголок */
+#perm-ask::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: var(--perm-arrow, 20px);
+  width: 10px;
+  height: 10px;
+  border-left: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  background: var(--bg-elev);
+  transform: rotate(45deg);
+}
+
+#perm-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#perm-head > svg {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+#perm-title {
+  font-size: 13px;
+}
+
+/* Адрес переносится, а не режется: по обрезанному имени сайта решать нельзя */
+#perm-who {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--fg-dim);
+  overflow-wrap: anywhere;
+}
+
+#perm-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.perm-remember {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  color: var(--fg-dim);
+}

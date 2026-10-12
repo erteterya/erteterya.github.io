@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Sonar</title>
+  <desc id="desc">Асимметричная синяя лента в форме незамкнутой буквы O</desc>
+  <defs>
+    <linearGradient id="sonar-blue" x1="78" y1="370" x2="430" y2="102" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1354C7" />
+      <stop offset="0.46" stop-color="#1465E8" />
+      <stop offset="1" stop-color="#8FD7FF" />
+    </linearGradient>
+  </defs>
+  <path
+    d="M360 93
+       C306 55 242 48 184 70
+       C106 100 59 173 65 261
+       C71 359 150 438 248 454
+       C333 468 397 430 424 372
+       C439 340 442 291 433 250
+       C420 181 398 127 360 93
+       C351 111 340 120 331 126
+       C388 166 417 204 418 249
+       C421 283 415 310 400 334
+       C370 374 317 398 257 391
+       C184 383 126 323 124 249
+       C122 188 157 134 211 115
+       C254 100 301 105 331 126 Z"
+    fill="url(#sonar-blue)"
+  />
+</svg>

@@ -1,0 +1,172 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="chrome.css"><style>:root{--sw-radius:999px;--s-5:16px;--on-accent:#02060e;--tab-max:280px;--r-ctl:999px;--свет-1:rgba(164, 130, 255, 0.16);--r-row:6px;--accent:#5de3f0;--rail-w:44px;--tab-radius:0;--ui-blur:18px;--on-danger:#f4f4f4;--bg-sunk:#03040a;--s-1:2px;--tabstrip-h:36px;--tab-untilt:none;--ui-vignette:0.35;--tab-clip:none;--vert-radius:999px;--свет-2:rgba(93, 227, 240, 0.12);--tab-on-border:1px solid #5de3f0;--t-xs:11px;--dur-spin:1.1s;--s-6:24px;--vert-on-notch:none;--line:#2a3352;--btn-on-shadow:0 0 0 1px #5de3f0, 0 0 16px -2px #5de3f0;--tab-on-bg:#10222e;--основа:linear-gradient(160deg, #0a0e1c, #05070f 70%);--bg:#05070f;--btn-radius:999px;--fg-dim:#8891ad;--dur:80ms;--row-on-edge:0;--fg:#e8ecf7;--vert-on-bg:#0f1425;--tab-tilt:none;--grab-h:0px;--tab-on-edge:0;--ui-tint:0.4;--font-mono:ui-monospace, 'Cascadia Mono', 'Consolas', monospace;--row-on-bg:transparent;--bg-elev:#0f1425;--ctl-h:28px;--грунт:radial-gradient(150% 150% at 0% -25%, rgba(164, 130, 255, 0.16), transparent 100%),
+    radial-gradient(135% 140% at 100% 125%, rgba(93, 227, 240, 0.12), transparent 100%),
+    linear-gradient(160deg, #0a0e1c, #05070f 70%);--row-h:26px;--sw-glow:none;--ряд-под:0px;--font-ui:system-ui, 'Segoe UI', sans-serif;--rail-on-glow:0 0 0 1px #5de3f0, 0 0 16px -2px #5de3f0;--btn-on-notch:none;--vert-clip:none;--t-md:13px;--линия-тонкая:rgba(146, 160, 210, 0.22);--btn-on-color:#5de3f0;--t-sm:12px;--s-3:8px;--s-2:4px;--tab-min:52px;--tab-on-bar:none;--glow-bare:0 0 16px -2px #5de3f0;--glow:0 0 0 1px #5de3f0, 0 0 16px -2px #5de3f0;--ui-opacity:0.55;--rail-on-bar:0;--vert-on-border:1px solid transparent;--danger:#e8756a;--rail-on-bg:#10222e;--bg-hover:#151b30;--tab-basis:240px;--vert-tilt:none;--tab-pad:0 12px;--rail-on-radius:6px;--toolbar-h:34px;--btn-on-bg:transparent;--r-surface:8px;--vert-side:14px;--ui-font-size:13px;--row-on-border:#5de3f0;--accent-soft:#10222e;--vert-on-glow:0 0 0 1px #5de3f0, 0 0 16px -2px #5de3f0;--dur-gauge:200ms;--t-lg:15px;--грунт-выше:radial-gradient(150% 150% at 0% -25%, rgba(164, 130, 255, 0.16), transparent 100%),
+    radial-gradient(135% 140% at 100% 125%, rgba(93, 227, 240, 0.12), transparent 100%),
+    #0f1425;--s-4:12px}html,body{margin:0;width:100%;height:auto;overflow:hidden}body{display:block}#tabstrip{position:relative;z-index:2}#toolbar{position:relative;z-index:2}#authentic-page{height:650px;overflow:hidden}#authentic-page img{display:block;width:100%;height:auto;margin-top:-5.47%}#tabstrip .tab{cursor:pointer}.tab.sleeping .title,.tab.sleeping .favicon{opacity:1}#toolbar{pointer-events:none}#window-controls{pointer-events:none}</style><style id="variant"></style><title>SONAR — оформление вкладок</title></head><body class="rail-left"><div id="tabstrip">
+
+      <div id="brand" title="Sonar">
+
+        <svg viewBox="0 0 512 512" aria-hidden="true">
+          <defs>
+            <radialGradient id="brand-fade" cx="430" cy="420" r="190" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#000"></stop>
+              <stop offset="0.35" stop-color="#3a3a3a"></stop>
+              <stop offset="1" stop-color="#fff"></stop>
+            </radialGradient>
+            <mask id="brand-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512">
+              <rect width="512" height="512" fill="url(#brand-fade)"></rect>
+            </mask>
+          </defs>
+          <path mask="url(#brand-mask)" fill="currentColor" fill-rule="evenodd" d="M446 256C446 361 361 446 256 446C137 446 38 360 38 250C38 146 137 60 256 60C361 60 446 150 446 256ZM438 264A162 162 0 1 0 114 264A162 162 0 1 0 438 264Z"></path>
+        </svg>
+      </div>
+      <div id="tabs" class="листать" style="--tab-min: 116px;"><div class="tab active" draggable="true" data-id="4" title="Байкал — Википедия"><img class="favicon" src="../assets/sonar-logo.svg"><span class="title">Байкал — Википедия</span><span class="load" style="--load: 100%;"></span><i class="shape" aria-hidden="true"></i><button class="close" title="Закрыть — Ctrl+W"><svg viewBox="0 0 10 10"><path d="M1 1l8 8M9 1l-8 8"></path></svg></button></div><div class="tab sleeping" draggable="true" data-id="5" title="Алтай — Википедия — не загружена"><img class="favicon" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23808a99%22%20stroke-width%3D%221.2%22%3E%3Ccircle%20cx%3D%228%22%20cy%3D%228%22%20r%3D%226%22%2F%3E%3Cellipse%20cx%3D%228%22%20cy%3D%228%22%20rx%3D%222.5%22%20ry%3D%226%22%2F%3E%3Cpath%20d%3D%22M2%208h12%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"><span class="title">Алтай — Википедия</span><i class="shape" aria-hidden="true"></i><button class="close" title="Закрыть — Ctrl+W"><svg viewBox="0 0 10 10"><path d="M1 1l8 8M9 1l-8 8"></path></svg></button></div><div class="tab sleeping" draggable="true" data-id="6" title="Карелия — Википедия — не загружена"><img class="favicon" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23808a99%22%20stroke-width%3D%221.2%22%3E%3Ccircle%20cx%3D%228%22%20cy%3D%228%22%20r%3D%226%22%2F%3E%3Cellipse%20cx%3D%228%22%20cy%3D%228%22%20rx%3D%222.5%22%20ry%3D%226%22%2F%3E%3Cpath%20d%3D%22M2%208h12%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E"><span class="title">Карелия — Википедия</span><i class="shape" aria-hidden="true"></i><button class="close" title="Закрыть — Ctrl+W"><svg viewBox="0 0 10 10"><path d="M1 1l8 8M9 1l-8 8"></path></svg></button></div></div>
+      <button id="tab-new" class="icon" title="Новая вкладка — Ctrl+T">
+        <svg viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9"></path></svg>
+      </button>
+      <div id="drag-region"></div>
+      <span id="private-badge" hidden="">Приватно</span>
+
+    <div id="window-controls" class="">
+        <button id="win-min" class="icon" title="Свернуть">
+          <svg viewBox="0 0 16 16"><path d="M3.5 8h9"></path></svg>
+        </button>
+        <button id="win-max" class="icon" title="Развернуть">
+          <svg viewBox="0 0 16 16"><rect x="3.5" y="3.5" width="9" height="9"></rect></svg>
+        </button>
+        <button id="win-close" class="icon danger" title="Закрыть">
+          <svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"></path></svg>
+        </button>
+      </div></div><div id="toolbar">
+      <button id="back" class="icon" title="Назад — Alt+←" disabled="">
+        <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"></path></svg>
+      </button>
+      <button id="forward" class="icon" title="Вперёд — Alt+→" disabled="">
+        <svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"></path></svg>
+      </button>
+      <button id="reload" class="icon" title="Обновить — Ctrl+R">
+        <svg viewBox="0 0 16 16" class="ico-reload">
+          <path d="M13 8a5 5 0 1 1-1.46-3.54"></path>
+          <path d="M13.5 2v3h-3"></path>
+        </svg>
+        <svg viewBox="0 0 16 16" class="ico-stop"><path d="M4 4l8 8M12 4l-8 8"></path></svg>
+      </button>
+      <div id="address">
+
+        <div id="field-wrap">
+          <input id="omnibox" type="text" spellcheck="false" autocomplete="off" placeholder="Введите запрос для поиска или веб-адрес" title="Поиск: Sonar" style="padding-right: 159px;">
+
+          <div id="in-field">
+
+
+          <button id="media-dl" title="Скачать видео или звук" hidden="">
+            <svg viewBox="0 0 16 16"><path d="M8 2.5v7.5M4.8 7l3.2 3.2L11.2 7"></path><path d="M2.5 11.5v1a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1v-1"></path></svg>
+          </button>
+
+          <button id="shot" title="Снимок страницы — подрисовать и спросить ИИ">
+            <svg viewBox="0 0 16 16"><path d="M2.5 5.5a1 1 0 0 1 1-1h1.8l1-1.5h3.4l1 1.5h1.8a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z"></path><circle cx="8" cy="8.3" r="2.2"></circle></svg>
+          </button>
+          <button id="translate" title="Перевести страницу">
+            <svg viewBox="0 0 16 16">
+              <path d="M1.5 3.5h6M4.5 2v1.5M6 3.5c0 2.9-1.6 5.2-4 6.3"></path>
+              <path d="M3 7.3c1.2 1.7 2.7 2.7 4.3 3.2"></path>
+              <path d="M8.4 14.5l3-7 3 7M9.5 12.2h3.8"></path>
+            </svg>
+          </button>
+
+          <button id="pip-page" title="Картинка в картинке — Ctrl+Shift+P" hidden="">
+            <svg viewBox="0 0 16 16">
+              <path d="M1.8 3h12.4v10H1.8z"></path>
+              <path d="M8 8.2h5.2v4H8z"></path>
+            </svg>
+          </button>
+
+          <span id="load-badge" title="Браузер занимает 2 % процессора всей машины. Какая вкладка сколько — в «Ресурсах», раздел «Убийца вкладок»">ЦП 2 %</span>
+          <button id="shield" title="Заблокировано: реклама 0, трекеры 0">
+            <svg viewBox="0 0 16 16"><path d="M8 1.8l5 1.8v4.1c0 3-2.1 5-5 6.5-2.9-1.5-5-3.5-5-6.5V3.6z"></path></svg>
+            <span id="shield-count"></span>
+          </button>
+          <button id="bookmark" title="Добавить в закладки — Ctrl+D">
+            <svg viewBox="0 0 16 16">
+              <path d="M8 13.2S2.2 9.6 2.2 6.1A2.9 2.9 0 0 1 8 4.7a2.9 2.9 0 0 1 5.8 1.4c0 3.5-5.8 7.1-5.8 7.1z"></path>
+            </svg>
+          </button>
+          </div>
+        </div>
+        <div id="nowplaying" hidden="">
+
+            <button id="np-fold" title="Свернуть плеер"></button>
+            <img id="np-art" alt="" hidden="">
+            <div id="np-text">
+              <b id="np-title"></b>
+              <span id="np-artist"></span>
+            </div>
+            <button id="np-prev" class="icon" title="Предыдущий трек">
+              <svg viewBox="0 0 16 16"><path d="M11.5 4v8L6 8zM4.5 4v8"></path></svg>
+            </button>
+            <button id="np-play" class="icon" title="Пауза">
+              <svg viewBox="0 0 16 16" class="np-pause"><path d="M6 4v8M10 4v8"></path></svg>
+              <svg viewBox="0 0 16 16" class="np-go"><path d="M5.5 3.8v8.4L12 8z"></path></svg>
+            </button>
+          <button id="np-next" class="icon" title="Следующий трек">
+            <svg viewBox="0 0 16 16"><path d="M4.5 4v8L10 8zM11.5 4v8"></path></svg>
+          </button>
+
+          <div id="np-sound">
+            <button id="np-mute" class="icon" title="Громкость">
+              <svg viewBox="0 0 16 16" class="np-loud">
+                <path d="M8 3L5 5.5H3v5h2L8 13z"></path>
+                <path d="M10.5 6a3 3 0 0 1 0 4M12.4 4.4a5.5 5.5 0 0 1 0 7.2"></path>
+              </svg>
+              <svg viewBox="0 0 16 16" class="np-quiet">
+                <path d="M8 3L5 5.5H3v5h2L8 13z"></path>
+                <path d="M10.5 6l3.5 4M14 6l-3.5 4"></path>
+              </svg>
+            </button>
+            <div id="np-vol-box" hidden="">
+              <div id="np-volume" title="Громкость">
+                <div id="np-vol-fill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div id="ext-row">
+        <button id="ext-fold" title="Свернуть расширения"></button>
+        <div id="ext-pins"></div>
+        <button id="ext-all" class="icon" title="Все расширения">
+          <svg viewBox="0 0 16 16">
+            <path d="M6.2 2.2h3.6v2a1.4 1.4 0 1 0 0 2.8v2h-2a1.4 1.4 0 1 1-2.8 0h-2V2.2z"></path>
+            <path d="M9.8 9h4v4.8H9.8v-2a1.4 1.4 0 1 1-2.8 0v-2z"></path>
+          </svg>
+        </button>
+      </div>
+
+
+
+      <button id="downloads" class="icon" title="Загрузки — Ctrl+J. Пока пусто">
+        <svg viewBox="0 0 16 16">
+          <path d="M8 2v7M5 6.5L8 9.5l3-3M3 12.5h10"></path>
+        </svg>
+        <span id="dl-count"></span>
+      </button>
+
+      <button id="menu" class="icon" title="Меню">
+        <svg viewBox="0 0 16 16"><path d="M3 5h10M3 8h10M3 11h10"></path></svg>
+      </button>
+
+
+    </div><div id="authentic-page"><img src="../assets/space-personal.webp" alt="Настоящий SONAR с открытой страницей Байкала"></div><script>
+const params=new URLSearchParams(location.search);const chosen=params.get('variant')||'capsule';
+fetch('variants.json').then(r=>r.json()).then(items=>{const item=items.find(i=>i.id===chosen)||items[0];document.querySelector('#variant').textContent=item.css;});
+const address=document.getElementById('omnibox');if(address){address.value='https://ru.wikipedia.org/wiki/Байкал';address.readOnly=true;}document.querySelectorAll('#toolbar button,#window-controls button').forEach(b=>{b.disabled=true;});const tabs=document.getElementById('tabs');
+tabs.querySelectorAll('.tab').forEach((tab,i)=>{tab.draggable=false;tab.tabIndex=i===0?0:-1;tab.setAttribute('role','tab');tab.setAttribute('aria-selected',i===0?'true':'false');});
+tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Вкладки SONAR');
+function select(tab){tabs.querySelectorAll('.tab').forEach(t=>{t.classList.toggle('active',t===tab);t.setAttribute('aria-selected',String(t===tab));t.tabIndex=t===tab?0:-1;});}
+tabs.addEventListener('click',e=>{const tab=e.target.closest('.tab');if(!tab)return;if(e.target.closest('.close')){const next=tab.nextElementSibling||tab.previousElementSibling;tab.remove();if(next&&!tabs.querySelector('.active'))select(next);}else select(tab);});
+tabs.addEventListener('keydown',e=>{const list=[...tabs.querySelectorAll('.tab')];const at=list.indexOf(e.target);if(at<0)return;if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();const next=list[(at+(e.key==='ArrowRight'?1:list.length-1))%list.length];select(next);next.focus();}});
+const template=tabs.querySelector('.tab').cloneNode(true);const add=document.getElementById('tab-new');if(add)add.onclick=()=>{const tab=template.cloneNode(true);tab.querySelector('.title').textContent='Новая вкладка';tab.removeAttribute('data-id');tab.title='Новая вкладка';tabs.append(tab);select(tab);};
+if(params.get('strip')==='1'){document.getElementById('authentic-page').remove();document.getElementById('toolbar')?.remove();}
+</script></body></html>
