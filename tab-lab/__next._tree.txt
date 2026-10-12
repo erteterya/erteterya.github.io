@@ -1,3 +1,0 @@
-:HL["/_next/static/css/ca86d769b8d38471.css","style"]
-:HL["/_next/static/css/3a65bfc1ac2d9674.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"tab-lab","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"4kG_DVYT1p2HjjKM2hnq2"}

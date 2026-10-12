@@ -1,4 +1,4 @@
-:HL["/_next/static/css/ca86d769b8d38471.css","style"]
-:HL["/assets/signal.webp","image"]
+:HL["/_next/static/css/d59ef8dafad20989.css","style"]
+:HL["/assets/theme-signal.webp","image"]
 :HL["/assets/sonar-logo.svg","image"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"4kG_DVYT1p2HjjKM2hnq2"}
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"ZR64aFvM-C-AfXCBLcVdj"}
